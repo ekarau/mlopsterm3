@@ -79,7 +79,13 @@ class MLEngineerPipeline:
         # Define models to compare
         models = {
             "RandomForest_Bagging": RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42),
-            "XGBoost_Boosting": XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=6, eval_metric="logloss", random_state=42)
+            "XGBoost_Boosting": XGBClassifier(
+                n_estimators=100,
+                learning_rate=0.1,
+                max_depth=6,
+                eval_metric="logloss",
+                random_state=42
+            )
         }
 
         # Train and Evaluate

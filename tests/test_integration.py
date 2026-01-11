@@ -1,10 +1,6 @@
 import pytest
 import pandas as pd
-import os
-from src.features import preprocess_data  # Bu fonksiyonun senin projende var olduğunu varsayıyorum
-
-# Not: Eğer src modülü bulunamazsa, testi çalıştırmadan önce
-# export PYTHONPATH=$PYTHONPATH:. komutunu kullanman gerekebilir.
+from src.features import preprocess_data
 
 
 def test_data_ingestion_and_processing_integration(tmp_path):

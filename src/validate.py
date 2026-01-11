@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 def validate_input_data(df):
     """
     MANDATORY REQUIREMENT (III.3): Monitoring & Statistical Checks.
