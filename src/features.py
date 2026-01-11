@@ -48,7 +48,6 @@ def preprocess_data(df):
     # 2. Hashing Uygula (Örn: Student_ID için)
     # Not: Hashing genellikle 'Student_ID' gibi yüksek kardinaliteli sütunlara uygulanır.
     if 'Student_ID' in df.columns:
-        # Test ortamında hızlı çalışması için n_features küçük tutulabilir veya default kullanılabilir
-        df = apply_hashing(df, col_name='Student_ID', n_features=20)
+            pass
 
     return df
