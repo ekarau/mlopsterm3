@@ -30,3 +30,22 @@ def apply_hashing(df, col_name, n_features=100):
     
     # Dropping the original high-cardinality column and adding the hashed version
     return pd.concat([df.drop(columns=[col_name]), hashed_df], axis=1)
+
+def preprocess_data(df):
+    """
+    Tüm özellik mühendisliği adımlarını birleştiren ana fonksiyon.
+    Test ve pipeline bu fonksiyonu çağıracak.
+    """
+    print("Pipeline: Preprocessing started...")
+    
+    # 1. Feature Cross Uygula (Eğer gerekli sütunlar varsa)
+    if 'Category' in df.columns and 'Course_Level' in df.columns:
+        df = apply_feature_cross(df)
+        
+    # 2. Hashing Uygula (Örn: Student_ID için)
+    # Not: Hashing genellikle 'Student_ID' gibi yüksek kardinaliteli sütunlara uygulanır.
+    if 'Student_ID' in df.columns:
+        # Test ortamında hızlı çalışması için n_features küçük tutulabilir veya default kullanılabilir
+        df = apply_hashing(df, col_name='Student_ID', n_features=20)
+        
+    return df
