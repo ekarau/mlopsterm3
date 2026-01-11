@@ -2,10 +2,8 @@ import requests
 import time
 import sys
 
-# Konteynerın çalıştığı adres (docker-compose veya run ayarına göre değişebilir)
-URL = "http://localhost:8000/predict"  # Portu kendi ayarına göre 5000 veya 8000 yap
+URL = "http://localhost:8000/predict"
 
-# Test edilecek örnek veri (Homework temasına uygun High Cardinality örneği)
 SAMPLE_PAYLOAD = {
     "features": {
         "category_feature": "some_high_cardinality_value",
@@ -15,12 +13,10 @@ SAMPLE_PAYLOAD = {
 
 
 def wait_for_service(url, retries=5, delay=5):
-    """Servisin ayağa kalkmasını bekler."""
     for i in range(retries):
         try:
-            # Sağlık kontrolü veya basit bir istek
-            response = requests.get(url.replace("/predict", "/"), timeout=2)  # Root endpoint kontrolü
-            if response.status_code in [200, 404]:  # 404 de olsa server ayakta demektir
+            response = requests.get(url.replace("/predict", "/"), timeout=2)
+            if response.status_code in [200, 404]:
                 print("Servis ayakta!")
                 return True
         except requests.exceptions.ConnectionError:
@@ -30,7 +26,6 @@ def wait_for_service(url, retries=5, delay=5):
 
 
 def smoke_test():
-    """API'ye tahmin isteği gönderir ve 200 OK arar."""
     if not wait_for_service(URL):
         print("HATA: Servis zaman aşımına uğradı, başlatılamadı.")
         sys.exit(1)

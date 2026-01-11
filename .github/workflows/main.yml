@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # GÜNCELLENDİ: Repo adı isteğine göre değiştirildi
   IMAGE_NAME: ekarau/mlopsterm3
 
 jobs:
@@ -48,14 +47,10 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest httpx
-
-          # ÖNEMLİ: src klasörünün bulunabilmesi için path ayarı
           export PYTHONPATH=$PYTHONPATH:.
-
-          # Testleri çalıştır (Docker smoke testlerini hariç tutuyoruz)
           pytest tests/ -k "not docker_smoke"
 
-# --- 3. LINT STAGE ---
+  # --- 3. LINT STAGE ---
   lint_stage:
     needs: unit_test_stage
     runs-on: ubuntu-latest
@@ -71,17 +66,12 @@ jobs:
       - name: Linting (Code Quality & Syntax)
         run: |
           pip install flake8
-          
-          # Ayarlar artık .flake8 dosyasından okunuyor.
-          # Eğer kod stili veya syntax hatası varsa 'exit code 1' döner 
-          # ve pipeline otomatik olarak DURUR (Stop the Line).
           flake8 .
 
   # --- 4. PACKAGE STAGE ---
   package_stage:
     needs: lint_stage
     runs-on: ubuntu-latest
-    # Bu izinler GHCR'a push yapabilmek için şart
     permissions:
       contents: read
       packages: write
@@ -124,25 +114,12 @@ jobs:
       
       - name: Smoke Test (Curl ile)
         run: |
-          # Konteynerı başlat
           docker run -d --name api_smoke -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          
           echo "Servis bekleniyor (15 sn)..."
           sleep 15
-          
-          # Logları göster (Hata ayıklama için)
           docker logs api_smoke
-          
-          # NOT: Eğer uygulanda /health endpoint'i yoksa bu satır hata verebilir.
-          # Yoksa bu satırı silebilir veya '/' kök dizini kontrol edebilirsin.
-          # curl --fail http://127.0.0.1:8000/health || echo "Health check atlandı veya başarısız (uygulamada /health yoksa normal)"
-          
-          # Prediction Check (Ana Test)
-          # Eğer input formatın farklıysa buradaki JSON verisini güncellemelisin.
           echo "Tahmin isteği gönderiliyor..."
           curl -v --fail -X POST "http://127.0.0.1:8000/predict" \
                -H "Content-Type: application/json" \
                -d '{"Student_ID": "TEST_USER", "Age": 25, "Progress_Percentage": 50, "Quiz_Score_Avg": 80}'
-          
-          # Temizlik
           docker rm -f api_smoke
