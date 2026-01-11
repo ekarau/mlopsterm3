@@ -1,0 +1,22 @@
+artifact_path: file:///C:/Users/Monster/OneDrive/Desktop/mlops project/MLOps-Project-Unified/mlruns/1/models/m-aba0639e4bb14631845e5357d17e7e45/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.10.11
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.8.1
+model_id: m-aba0639e4bb14631845e5357d17e7e45
+model_size_bytes: 20044061
+model_uuid: m-aba0639e4bb14631845e5357d17e7e45
+prompts: null
+run_id: 4c24ce77a1b44764a3c191f56d518242
+utc_time_created: '2025-12-31 12:47:42.259540'
