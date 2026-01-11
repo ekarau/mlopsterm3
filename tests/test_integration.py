@@ -1,6 +1,5 @@
 import pytest
 import pandas as pd
-from src.features import preprocess_data
 
 
 def test_data_ingestion_and_processing_integration(tmp_path):

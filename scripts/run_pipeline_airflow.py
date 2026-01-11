@@ -9,8 +9,6 @@ import sys
 # Adding path so Python can find the 'src' folder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-# Importing functions from our own modules
-
 
 def main():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -71,7 +69,7 @@ def main():
     train_df.to_csv(train_path, index=False)
     test_df.to_csv(test_path, index=False)
 
-    print(f"✅ PROCESS SUCCESSFUL!")
+    print("✅ PROCESS SUCCESSFUL!")
     print(f"   -> Created file: {train_path}")
     print(f"   -> Created file: {test_path}")
 
