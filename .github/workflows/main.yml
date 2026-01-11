@@ -55,7 +55,7 @@ jobs:
           # Testleri çalıştır (Docker smoke testlerini hariç tutuyoruz)
           pytest tests/ -k "not docker_smoke"
 
-  # --- 3. LINT STAGE ---
+# --- 3. LINT STAGE ---
   lint_stage:
     needs: unit_test_stage
     runs-on: ubuntu-latest
@@ -68,13 +68,22 @@ jobs:
         with:
           python-version: '3.11'
       
-      - name: Linting
+      - name: Linting (Code Quality & Syntax)
         run: |
           pip install flake8
-          # Kritik hatalarda durdur
+          
+          echo "1. Kritik Syntax Hataları Kontrol Ediliyor..."
+          # Bu komut Python syntax hatalarını (E9) ve tanımsız değişkenleri (F63, F7, F82) yakalar.
+          # Hata bulursa build anında DURUR (Stop the Line).
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Stil uyarılarını göster ama durdurma (exit-zero)
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          
+          echo "2. Kod Stili (PEP8) Kontrol Ediliyor..."
+          # ÖDEV GEREKSİNİMİ: "Failure to meet these thresholds must fail the build"
+          # --exit-zero parametresini KALDIRDIK. Artık stil hatası varsa pipeline KIPKIRMIZI olacak.
+          # Kurallar:
+          # --max-complexity=10: Bir fonksiyon çok karmaşıksa hata ver.
+          # --max-line-length=127: Satır 127 karakterden uzunsa hata ver.
+          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
 
   # --- 4. PACKAGE STAGE ---
   package_stage:
