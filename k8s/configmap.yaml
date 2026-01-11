@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: course-config
+data:
+  MODEL_PATH: "models/model.pkl"
+  MLFLOW_TRACKING_URI: "http://mlflow:5000"

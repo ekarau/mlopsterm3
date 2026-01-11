@@ -1,0 +1,127 @@
+stages:
+  - commit
+  - test
+  - build
+  - deploy
+  - acceptance
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+lint_flake8:
+  stage: commit
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt
+    - flake8 .
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+security_bandit:
+  stage: commit
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt
+    - bandit -r app src -q
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+unit_tests:
+  stage: test
+  image: python:3.11
+  allow_failure: true
+  script:
+    - pip install -r requirements.txt
+    - pip install httpx
+    - pytest -q
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+docker_build:
+  stage: build
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build -t "$CI_REGISTRY_IMAGE:latest" -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+
+deploy_real:
+  stage: deploy
+  image: alpine:3.20
+
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$DEPLOY_SSH_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - |
+      echo -e "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" > ~/.ssh/config
+
+  script:
+    # SSH bağlantı testi
+    - ssh -i ~/.ssh/id_ed25519 "$DEPLOY_USER@$DEPLOY_HOST" "echo SSH_OK"
+
+    # k8s manifestlerini VM'ye kopyala
+    - scp -i ~/.ssh/id_ed25519 -r k8s "$DEPLOY_USER@$DEPLOY_HOST:/tmp/k8s"
+
+    # VM üzerinde apply + rollout kontrolü
+    - |
+      ssh -i ~/.ssh/id_ed25519 "$DEPLOY_USER@$DEPLOY_HOST" "
+        sudo kubectl apply -f /tmp/k8s &&
+        sudo kubectl rollout status deployment/course-api --timeout=180s &&
+        sudo kubectl get pods -o wide
+      "
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+
+
+
+
+
+acceptance_smoke:
+  stage: acceptance
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker version
+    - docker build -t course-completion-api:smoke .
+    - docker run -d --name api_smoke course-completion-api:smoke
+    - sleep 6
+    - docker ps
+    - docker logs api_smoke --tail 80
+
+    - |
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        echo "Health check attempt $i"
+        docker exec api_smoke python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()" && break
+        sleep 2
+      done
+
+    - docker exec api_smoke python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health').read().decode())"
+    - docker exec api_smoke python -c "import json,urllib.request; data=json.dumps({'Progress_Percentage':95,'Quiz_Score_Avg':80}).encode(); req=urllib.request.Request('http://127.0.0.1:8000/predict', data=data, headers={'Content-Type':'application/json'}); print(urllib.request.urlopen(req, timeout=5).read().decode())"
+    - docker rm -f api_smoke
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+
+    
+

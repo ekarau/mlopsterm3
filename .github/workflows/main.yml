@@ -1,0 +1,130 @@
+name: MLOps Homework Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  REGISTRY: ghcr.io
+  # Reponun adını küçük harflerle yazdığından emin ol
+  IMAGE_NAME: ekarau/machine-learning-operations-project
+
+jobs:
+  # --- 1. BUILD STAGE ---
+  build_stage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Bağımlılıkları Kontrol Et
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          echo "Build (Dependency Check) Successful"
+
+  # --- 2. UNIT TEST STAGE (DÜZELTİLDİ) ---
+  unit_test_stage:
+    needs: build_stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+      
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Testleri Çalıştır
+        run: |
+          python -m pip install --upgrade pip
+          # 1. Tüm gereksinimleri yükle (Eksik kütüphane hatasını önler)
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # 2. Test araçlarını yükle
+          pip install pytest httpx
+
+          # 3. Test Komutu (GÜNCELLENDİ)
+          # Dosya isimlerini tek tek yazmak yerine klasörü veriyoruz.
+          # -k "not docker" komutu, dosya isminde veya test isminde "docker" geçenleri (smoke testleri) hariç tutar.
+          # Böylece "dosya bulunamadı (Exit Code 4)" hatası almazsın.
+          pytest tests/ -k "not docker_smoke"
+
+  # --- 3. LINT STAGE ---
+  lint_stage:
+    needs: unit_test_stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Linting
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  # --- 4. PACKAGE STAGE ---
+  package_stage:
+    needs: lint_stage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+      - name: Registry Giriş
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # --- 5. SMOKE TEST STAGE ---
+  smoke_test_stage:
+    needs: package_stage
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - name: Registry Giriş
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: İmajı Çek
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Smoke Test
+        run: |
+          docker run -d --name api_smoke -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          echo "Servis bekleniyor..."
+          sleep 10
+          docker logs api_smoke
+          
+          # Health Check
+          curl --fail http://127.0.0.1:8000/health || exit 1
+          
+          # Prediction Check
+          curl -X POST "http://127.0.0.1:8000/predict" \
+               -H "Content-Type: application/json" \
+               -d '{"Student_ID": "TEST", "Age": 25, "Progress_Percentage": 50, "Quiz_Score_Avg": 80}' || exit 1
+          
+          docker rm -f api_smoke

@@ -1,0 +1,19 @@
+groups:
+  - name: prediction_api_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(request_count_total{status="500"}[1m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Error Rate Detected"
+          description: "The API has been returning 500 errors at a rate > 5% for the last minute."
+
+      - alert: ModelNotLoaded
+        expr: prediction_mode_total{mode="fallback_no_model"} > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model Not Loaded, Fallback Mode Active"
