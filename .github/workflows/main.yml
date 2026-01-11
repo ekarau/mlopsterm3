@@ -72,18 +72,10 @@ jobs:
         run: |
           pip install flake8
           
-          echo "1. Kritik Syntax Hataları Kontrol Ediliyor..."
-          # Bu komut Python syntax hatalarını (E9) ve tanımsız değişkenleri (F63, F7, F82) yakalar.
-          # Hata bulursa build anında DURUR (Stop the Line).
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          
-          echo "2. Kod Stili (PEP8) Kontrol Ediliyor..."
-          # ÖDEV GEREKSİNİMİ: "Failure to meet these thresholds must fail the build"
-          # --exit-zero parametresini KALDIRDIK. Artık stil hatası varsa pipeline KIPKIRMIZI olacak.
-          # Kurallar:
-          # --max-complexity=10: Bir fonksiyon çok karmaşıksa hata ver.
-          # --max-line-length=127: Satır 127 karakterden uzunsa hata ver.
-          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+          # Ayarlar artık .flake8 dosyasından okunuyor.
+          # Eğer kod stili veya syntax hatası varsa 'exit code 1' döner 
+          # ve pipeline otomatik olarak DURUR (Stop the Line).
+          flake8 .
 
   # --- 4. PACKAGE STAGE ---
   package_stage:

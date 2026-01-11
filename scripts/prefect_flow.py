@@ -5,6 +5,7 @@ import mlflow.sklearn
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
+
 @task
 def train_and_log():
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
@@ -21,6 +22,7 @@ def train_and_log():
             registered_model_name="course-completion-model"
         )
 
+
 @flow(name="train-flow")
 def train_flow():
     train_and_log()
@@ -28,4 +30,3 @@ def train_flow():
 
 if __name__ == "__main__":
     train_flow()
-    

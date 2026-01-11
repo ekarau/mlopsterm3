@@ -155,6 +155,7 @@ def _basic_guard(payload: dict):
         if isinstance(v, str) and len(v) > 5000:
             raise ValueError(f"field '{k}' is too large.")
 
+
 @app.middleware("http")
 async def count_all_requests(request: Request, call_next):
     REQ_COUNT.inc()

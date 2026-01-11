@@ -37,11 +37,13 @@ CHECKPOINT_DIR = '/opt/airflow/data/models'
 DATA_PATH = '/opt/airflow/data/raw/Course_Completion_Prediction.csv'
 BACKUP_DATA_PATH = '/opt/airflow/data/interim/3_features.csv'
 
+
 class MLEngineerPipeline:
     """
     Class responsible for running ML experiments, logging to MLflow,
     and saving model artifacts.
     """
+
     def __init__(self, processed_dataframe, experiment_name="Course_Completion_MLOps"):
         self.data = processed_dataframe
         self.experiment_name = experiment_name
@@ -96,7 +98,7 @@ class MLEngineerPipeline:
                 mlflow.log_metric("f1_score", f1)
 
                 mlflow.sklearn.log_model(model, "model")
-                
+
                 # Save model locally
                 joblib.dump(model, f"{CHECKPOINT_DIR}/{name}.pkl")
 
@@ -165,9 +167,11 @@ class MLEngineerPipeline:
 
 # --- MAIN EXECUTION FUNCTION ---
 # This function is what Airflow imports and runs.
+
+
 def main():
     print("🚀 Training process started inside Airflow...")
-    
+
     try:
         # 1. Load Data
         # Try loading raw data first, otherwise fallback to interim data
@@ -211,12 +215,12 @@ def main():
         print("\n--- EXPERIMENT RESULTS REPORT ---")
         print(pipeline.get_results_table())
         print(f"\nModels saved to '{CHECKPOINT_DIR}' directory.")
-        
+
         # 5. Save the Best Model for API Usage
         # We copy the standard XGBoost model to 'model.pkl' so the API can find it easily.
         best_model_source = f"{CHECKPOINT_DIR}/XGBoost_Boosting.pkl"
         final_model_dest = f"{CHECKPOINT_DIR}/model.pkl"
-        
+
         if os.path.exists(best_model_source):
             shutil.copy(best_model_source, final_model_dest)
             print(f"✅ Best model copied to {final_model_dest} for API usage.")
@@ -227,6 +231,7 @@ def main():
         print(f"❌ Critical Error in Training: {e}")
         # Re-raise the exception so Airflow marks the task as FAILED
         raise e
+
 
 # This block allows running the script manually from terminal
 if __name__ == "__main__":
